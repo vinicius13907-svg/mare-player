@@ -136,7 +136,7 @@
       resultsList.innerHTML = `
         <div class="text-center py-16">
           <i class="fa-solid fa-circle-notch fa-spin text-amber-500 text-3xl mb-3"></i>
-          <p class="text-slate-300 font-medium">Conectando aos servidores de música...</p>
+          <p class="text-slate-300 font-medium">Buscando faixas completas...</p>
         </div>
       `;
 
@@ -144,16 +144,16 @@
       const q = encodeURIComponent(query);
       
       const apiSources = [
-        `https://saavn.dev/api/search/songs?query=${q}`,
-        `https://api.codetabs.com/v1/proxy?quest=` + encodeURIComponent(`https://saavn.dev/api/search/songs?query=${q}`),
+        `https://corsproxy.io/?` + encodeURIComponent(`https://saavn.dev/api/search/songs?query=${q}`),
         `https://api.allorigins.win/raw?url=` + encodeURIComponent(`https://saavn.dev/api/search/songs?query=${q}`),
-        `https://saavn.me/search/songs?query=${q}`
+        `https://api.codetabs.com/v1/proxy?quest=` + encodeURIComponent(`https://saavn.dev/api/search/songs?query=${q}`),
+        `https://saavn.dev/api/search/songs?query=${q}`
       ];
 
       for (let url of apiSources) {
         try {
           const controller = new AbortController();
-          const timer = setTimeout(() => controller.abort(), 3000);
+          const timer = setTimeout(() => controller.abort(), 6000);
           const res = await fetch(url, { signal: controller.signal });
           clearTimeout(timer);
 
