@@ -1,229 +1,342 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Maré Player</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-  <style>
-    input[type=range]::-webkit-slider-thumb {
-      -webkit-appearance: none;
-      height: 14px;
-      width: 14px;
-      border-radius: 50%;
-      background: #f59e0b;
-      cursor: pointer;
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Maré Player</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+<style>
+input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  height: 14px;
+  width: 14px;
+  border-radius: 50%;
+  background: #f59e0b;
+  cursor: pointer;
+}
+</style>
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col font-sans select-none antialiased">
 
-  <!-- Topo / Busca -->
-  <header class="p-4 bg-slate-900/90 backdrop-blur-md sticky top-0 z-30 border-b border-slate-800/80 shadow-md">
-    <div class="max-w-2xl mx-auto">
-      <div class="flex items-center justify-between mb-3">
-        <h1 class="text-xl font-bold text-amber-500 flex items-center gap-2">
-          <i class="fa-solid fa-wave-square"></i> Maré Player
-        </h1>
-        <span class="text-xs px-2.5 py-1 bg-amber-500/10 text-amber-400 border border-amber-500/20 rounded-full font-medium">YouTube Audio Engine</span>
+<!-- Topo / Busca -->
+<header class="p-4 bg-slate-900/90 backdrop-blur-md sticky top-0 z-30 border-b border-slate-800/80 shadow-md">
+  <div class="max-w-2xl mx-auto">
+    <div class="flex items-center justify-between mb-3">
+      <h1 class="text-xl font-bold text-amber-500 flex items-center gap-2">
+        <i class="fa-solid fa-wave-square"></i> Maré Player
+      </h1>
+      <span class="text-xs px-2.5 py-1 bg-amber-500/10 text-amber-400 border border-amber-500/20 rounded-full font-medium">YouTube via Piped</span>
+    </div>
+    <div class="flex gap-2">
+      <input id="searchInput" type="text" placeholder="Digite música ou artista (ex: Tool Pneuma, Metallica)..."
+        class="w-full bg-slate-800/90 border border-slate-700/80 rounded-full px-4 py-2 text-sm text-white placeholder-slate-400 focus:outline-none focus:border-amber-500 transition"
+        onkeypress="if(event.key === 'Enter') buscarMusica()">
+      <button onclick="buscarMusica()" id="searchBtn" class="bg-amber-500 hover:bg-amber-600 active:scale-95 text-slate-950 font-semibold px-5 py-2 rounded-full text-sm transition shrink-0 flex items-center gap-1.5 shadow-lg shadow-amber-500/20">
+        <i class="fa-solid fa-magnifying-glass"></i>
+        <span>Buscar</span>
+      </button>
+    </div>
+  </div>
+</header>
+
+<!-- Lista de Resultados -->
+<main class="p-4 flex-1 max-w-2xl mx-auto w-full pb-36">
+  <div id="resultsList" class="space-y-2.5">
+    <div class="text-center py-16 px-4">
+      <div class="w-16 h-16 bg-slate-900 rounded-full flex items-center justify-center mx-auto mb-4 border border-slate-800 text-amber-500 text-2xl">
+        <i class="fa-solid fa-music"></i>
       </div>
-      <div class="flex gap-2">
-        <input id="searchInput" type="text" placeholder="Digite música ou artista (ex: Tool Pneuma, Metallica)..." 
-               class="w-full bg-slate-800/90 border border-slate-700/80 rounded-full px-4 py-2 text-sm text-white placeholder-slate-400 focus:outline-none focus:border-amber-500 transition"
-               onkeypress="if(event.key === 'Enter') buscarMusica()">
-        <button onclick="buscarMusica()" id="searchBtn" class="bg-amber-500 hover:bg-amber-600 active:scale-95 text-slate-950 font-semibold px-5 py-2 rounded-full text-sm transition shrink-0 flex items-center gap-1.5 shadow-lg shadow-amber-500/20">
-          <i class="fa-solid fa-magnifying-glass"></i>
-          <span>Buscar</span>
+      <p class="text-slate-300 font-medium text-base mb-1">Pronto para tocar</p>
+      <p class="text-slate-500 text-sm max-w-xs mx-auto">Pesquise uma música ou artista para ouvir o áudio direto do YouTube.</p>
+    </div>
+  </div>
+</main>
+
+<!-- Aviso rápido -->
+<div id="toast" role="status" class="hidden fixed left-1/2 -translate-x-1/2 bottom-28 z-40 w-[calc(100%-2rem)] max-w-md bg-slate-800 border border-slate-700 text-slate-100 text-sm rounded-xl px-4 py-3 shadow-xl text-center"></div>
+
+<!-- Player Fixo -->
+<div class="fixed bottom-0 left-0 right-0 bg-slate-900/95 backdrop-blur-md border-t border-slate-800/80 p-3 z-30 shadow-2xl">
+  <div class="max-w-2xl mx-auto flex flex-col gap-2.5">
+    <div class="flex items-center justify-between gap-3">
+      <div class="flex items-center gap-3 overflow-hidden flex-1">
+        <img id="playerCover" src="https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?w=120&h=120&fit=crop" alt="" class="w-12 h-12 rounded-lg object-cover bg-slate-800 border border-slate-700/60 shrink-0">
+        <div class="truncate">
+          <p id="playerTitle" class="text-sm font-semibold text-slate-100 truncate">Nenhuma música tocando</p>
+          <p id="playerArtist" class="text-xs text-slate-400 truncate">Selecione uma faixa acima</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-4 shrink-0">
+        <button onclick="togglePlay()" id="playBtn" aria-label="Tocar ou pausar" class="bg-amber-500 hover:bg-amber-400 active:scale-90 text-slate-950 w-11 h-11 rounded-full flex items-center justify-center text-lg font-bold shadow-lg shadow-amber-500/25 transition">
+          <i class="fa-solid fa-play ml-0.5"></i>
         </button>
       </div>
     </div>
-  </header>
-
-  <!-- Lista de Resultados -->
-  <main class="p-4 flex-1 max-w-2xl mx-auto w-full pb-36">
-    <div id="resultsList" class="space-y-2.5">
-      <div class="text-center py-16 px-4">
-        <div class="w-16 h-16 bg-slate-900 rounded-full flex items-center justify-center mx-auto mb-4 border border-slate-800 text-amber-500 text-2xl">
-          <i class="fa-solid fa-music"></i>
-        </div>
-        <p class="text-slate-300 font-medium text-base mb-1">Pronto para tocar</p>
-        <p class="text-slate-500 text-sm max-w-xs mx-auto">Pesquise qualquer música para extrair o áudio direto do YouTube sem anúncios.</p>
-      </div>
-    </div>
-  </main>
-
-  <!-- Player Fixo -->
-  <div class="fixed bottom-0 left-0 right-0 bg-slate-900/95 backdrop-blur-md border-t border-slate-800/80 p-3 z-30 shadow-2xl">
-    <div class="max-w-2xl mx-auto flex flex-col gap-2.5">
-      <div class="flex items-center justify-between gap-3">
-        <div class="flex items-center gap-3 overflow-hidden flex-1">
-          <img id="playerCover" src="https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?w=120&h=120&fit=crop" class="w-12 h-12 rounded-lg object-cover bg-slate-800 border border-slate-700/60 shrink-0">
-          <div class="truncate">
-            <p id="playerTitle" class="text-sm font-semibold text-slate-100 truncate">Nenhuma música tocando</p>
-            <p id="playerArtist" class="text-xs text-slate-400 truncate">Selecione uma faixa acima</p>
-          </div>
-        </div>
-        <div class="flex items-center gap-4 shrink-0">
-          <button onclick="togglePlay()" id="playBtn" class="bg-amber-500 hover:bg-amber-400 active:scale-90 text-slate-950 w-11 h-11 rounded-full flex items-center justify-center text-lg font-bold shadow-lg shadow-amber-500/25 transition">
-            <i class="fa-solid fa-play ml-0.5"></i>
-          </button>
-        </div>
-      </div>
-      <div class="flex items-center gap-2.5 text-xs text-slate-400 font-mono">
-        <span id="currentTime" class="w-8 text-right shrink-0">0:00</span>
-        <input id="progressBar" type="range" min="0" max="100" value="0" class="w-full accent-amber-500 h-1.5 bg-slate-800 rounded-lg cursor-pointer">
-        <span id="durationTime" class="w-8 shrink-0">0:00</span>
-      </div>
+    <div class="flex items-center gap-2.5 text-xs text-slate-400 font-mono">
+      <span id="currentTime" class="w-8 text-right shrink-0">0:00</span>
+      <input id="progressBar" type="range" min="0" max="100" value="0" aria-label="Posição da música" class="w-full accent-amber-500 h-1.5 bg-slate-800 rounded-lg cursor-pointer">
+      <span id="durationTime" class="w-8 shrink-0">0:00</span>
     </div>
   </div>
+</div>
 
-  <audio id="audioPlayer" preload="auto"></audio>
+<audio id="audioPlayer" preload="auto"></audio>
 
-  <script>
-    const audio = document.getElementById('audioPlayer');
-    const playBtn = document.getElementById('playBtn');
-    const progressBar = document.getElementById('progressBar');
-    const currentTimeEl = document.getElementById('currentTime');
-    const durationTimeEl = document.getElementById('durationTime');
+<script>
+const audio = document.getElementById('audioPlayer');
+const playBtn = document.getElementById('playBtn');
+const progressBar = document.getElementById('progressBar');
+const currentTimeEl = document.getElementById('currentTime');
+const durationTimeEl = document.getElementById('durationTime');
+const toastEl = document.getElementById('toast');
+const FALLBACK_COVER = 'https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?w=300&h=300&fit=crop';
 
-    const PIPED_INSTANCES = [
-      'https://api.piped.privacydev.net',
-      'https://pipedapi.kavin.rocks',
-      'https://pipedapi.tokhmi.xyz',
-      'https://pipedapi.moomoo.me'
-    ];
+/* ---------- Servidores do Piped ---------- */
+// Tentados em sequência. O último que funcionou passa a ser o primeiro da fila.
+const PIPED_INSTANCES = [
+  'https://api.piped.privacydev.net',
+  'https://pipedapi.tokhmi.xyz',
+  'https://pipedapi.moomoo.me',
+  'https://pipedapi.adminforge.de',
+  'https://api.piped.private.coffee',
+  'https://pipedapi.leptons.xyz',
+  'https://pipedapi.kavin.rocks'
+];
+const SEARCH_TIMEOUT = 3000;   // 3 segundos por servidor na busca
+const STREAM_TIMEOUT = 5000;   // a extração do áudio costuma demorar um pouco mais
 
-    async function fetchPiped(endpoint) {
-      for (let base of PIPED_INSTANCES) {
-        try {
-          const res = await fetch(`${base}${endpoint}`);
-          if (res.ok) return await res.json();
-        } catch (e) {}
-      }
-      return null;
+let lastGood = null;
+try { lastGood = localStorage.getItem('mare_piped'); } catch (e) {}
+
+function orderedInstances() {
+  const list = PIPED_INSTANCES.slice();
+  const i = lastGood ? list.indexOf(lastGood) : -1;
+  if (i > 0) list.unshift(list.splice(i, 1)[0]);
+  return list;
+}
+
+async function fetchPiped(endpoint, ms) {
+  for (const base of orderedInstances()) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), ms || SEARCH_TIMEOUT);
+    try {
+      const res = await fetch(base + endpoint, { signal: controller.signal });
+      if (!res.ok) continue;
+      const data = await res.json();
+      if (!data || data.error) continue;
+      lastGood = base;
+      try { localStorage.setItem('mare_piped', base); } catch (e) {}
+      return data;
+    } catch (e) {
+      /* erro de rede ou tempo esgotado: tenta o próximo servidor */
+    } finally {
+      clearTimeout(timer);
     }
+  }
+  throw new Error('offline');
+}
 
-    async function buscarMusica() {
-      const query = document.getElementById('searchInput').value.trim();
-      if (!query) return;
+/* ---------- Utilidades ---------- */
+function escapeHtml(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
 
-      const resultsList = document.getElementById('resultsList');
-      resultsList.innerHTML = `
-        <div class="text-center py-16">
-          <i class="fa-solid fa-circle-notch fa-spin text-amber-500 text-3xl mb-3"></i>
-          <p class="text-slate-300 font-medium">Buscando no YouTube...</p>
-        </div>
-      `;
+function formatTime(seconds) {
+  if (isNaN(seconds) || seconds < 0) return '0:00';
+  const min = Math.floor(seconds / 60);
+  const sec = Math.floor(seconds % 60);
+  return `${min}:${sec < 10 ? '0' : ''}${sec}`;
+}
 
-      let data = await fetchPiped(`/search?q=${encodeURIComponent(query)}&filter=music_songs`);
-      let items = data?.items || [];
+let toastTimer = 0;
+function showToast(msg) {
+  toastEl.textContent = msg;
+  toastEl.classList.remove('hidden');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => toastEl.classList.add('hidden'), 4500);
+}
 
-      if (!items.length) {
-        data = await fetchPiped(`/search?q=${encodeURIComponent(query)}&filter=all`);
-        if (data?.items) {
-          items = data.items.filter(i => i.type === 'video');
-        }
-      }
+function setPlayIcon(playing) {
+  playBtn.innerHTML = playing
+    ? '<i class="fa-solid fa-pause"></i>'
+    : '<i class="fa-solid fa-play ml-0.5"></i>';
+}
 
-      if (!items.length) {
-        resultsList.innerHTML = `
-          <div class="text-center py-12 px-4 bg-slate-900/40 border border-slate-800 rounded-2xl">
-            <i class="fa-solid fa-triangle-exclamation text-amber-500/80 text-3xl mb-2"></i>
-            <p class="text-slate-200 font-medium">Nenhuma faixa encontrada</p>
-            <p class="text-slate-400 text-xs mt-1">Tente pesquisar com outro nome.</p>
-          </div>
-        `;
-        return;
-      }
+/* ---------- Leitura dos resultados ---------- */
+function toSong(it) {
+  if (!it || !it.url) return null;
+  let id = '';
+  try { id = new URL(it.url, 'https://x.invalid').searchParams.get('v') || ''; } catch (e) {}
+  if (!/^[\w-]{11}$/.test(id)) return null;
+  return {
+    id: id,
+    title: it.title || 'Faixa sem título',
+    artist: String(it.uploaderName || 'YouTube').replace(/\s*-\s*Topic$/i, ''),
+    cover: it.thumbnail || FALLBACK_COVER,
+    duration: it.duration > 0 ? it.duration : 0
+  };
+}
 
-      window.currentSongs = items.map(item => {
-        const videoId = item.url ? item.url.replace('/watch?v=', '') : '';
-        return {
-          id: videoId,
-          title: item.title || 'Faixa sem título',
-          artist: item.uploaderName || 'YouTube',
-          cover: item.thumbnail || 'https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?w=300&h=300&fit=crop'
-        };
-      }).filter(s => s.id);
+// Prefere m4a (toca em todos os celulares e permite avançar a barra); usa webm como segunda opção.
+function pickAudio(streams) {
+  const ok = (streams || []).filter(s => s && s.url && (!s.audioTrackType || /original/i.test(s.audioTrackType)));
+  const can = s => audio.canPlayType(String(s.mimeType || '').split(';')[0]) !== '';
+  const byRate = (a, b) => (b.bitrate || 0) - (a.bitrate || 0);
+  const m4a = ok.filter(s => /mp4|m4a/i.test((s.mimeType || '') + (s.format || '')) && can(s)).sort(byRate);
+  const webm = ok.filter(s => /webm|opus/i.test((s.mimeType || '') + (s.format || '')) && can(s)).sort(byRate);
+  const best = m4a[0] || webm[0] || ok.slice().sort(byRate)[0];
+  return best ? best.url : null;
+}
 
-      resultsList.innerHTML = window.currentSongs.map((song, index) => `
-        <div onclick="tocar(${index})" 
-             class="flex items-center gap-3 p-3 bg-slate-900/70 hover:bg-slate-800/90 active:bg-slate-800 rounded-xl cursor-pointer border border-slate-800/80 transition group">
-          <img src="${song.cover}" class="w-12 h-12 rounded-lg object-cover bg-slate-800 border border-slate-700/60 shrink-0" onerror="this.src='https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?w=100&h=100&fit=crop'">
-          <div class="flex-1 truncate">
-            <p class="font-medium text-sm text-slate-100 group-hover:text-amber-400 transition truncate">${escapeHtml(song.title)}</p>
-            <p class="text-xs text-slate-400 truncate mt-0.5">${escapeHtml(song.artist)}</p>
-          </div>
-          <button class="text-amber-500 group-hover:scale-110 p-2 text-base shrink-0 transition">
-            <i class="fa-solid fa-play"></i>
-          </button>
-        </div>
-      `).join('');
+/* ---------- Busca ---------- */
+let searching = false;
+
+async function buscarMusica() {
+  const query = document.getElementById('searchInput').value.trim();
+  if (!query || searching) return;
+  searching = true;
+
+  const resultsList = document.getElementById('resultsList');
+  resultsList.innerHTML = `
+    <div class="text-center py-16">
+      <i class="fa-solid fa-circle-notch fa-spin text-amber-500 text-3xl mb-3"></i>
+      <p class="text-slate-300 font-medium">Buscando no YouTube...</p>
+      <p class="text-slate-500 text-xs mt-1">Pode levar alguns segundos.</p>
+    </div>`;
+
+  let songs = [];
+  try {
+    const q = encodeURIComponent(query);
+    let data = await fetchPiped(`/search?q=${q}&filter=music_songs`);
+    let items = (data.items || []).filter(i => i && (i.type === 'stream' || i.type === 'video'));
+
+    if (!items.length) {
+      data = await fetchPiped(`/search?q=${q}&filter=videos`);
+      items = (data.items || []).filter(i => i && (i.type === 'stream' || i.type === 'video'));
     }
+    songs = items.map(toSong).filter(Boolean);
+  } catch (e) {
+    searching = false;
+    resultsList.innerHTML = `
+      <div class="text-center py-12 px-4 bg-slate-900/40 border border-slate-800 rounded-2xl">
+        <i class="fa-solid fa-plug-circle-xmark text-amber-500/80 text-3xl mb-2"></i>
+        <p class="text-slate-200 font-medium">Servidores indisponíveis</p>
+        <p class="text-slate-400 text-xs mt-1 max-w-xs mx-auto">Os servidores públicos do Piped ficam fora do ar de vez em quando. Confira sua internet e tente de novo em instantes.</p>
+        <button onclick="buscarMusica()" class="mt-4 bg-amber-500 text-slate-950 font-semibold px-5 py-2 rounded-full text-sm active:scale-95 transition">Tentar de novo</button>
+      </div>`;
+    return;
+  }
+  searching = false;
 
-    function escapeHtml(str) {
-      if (!str) return '';
-      return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
-    }
+  if (!songs.length) {
+    resultsList.innerHTML = `
+      <div class="text-center py-12 px-4 bg-slate-900/40 border border-slate-800 rounded-2xl">
+        <i class="fa-solid fa-magnifying-glass text-amber-500/80 text-3xl mb-2"></i>
+        <p class="text-slate-200 font-medium">Nenhuma faixa encontrada</p>
+        <p class="text-slate-400 text-xs mt-1">Tente pesquisar com outro nome.</p>
+      </div>`;
+    return;
+  }
 
-    async function tocar(index) {
-      const song = window.currentSongs?.[index];
-      if (!song) return;
+  window.currentSongs = songs;
 
-      document.getElementById('playerTitle').innerText = song.title;
-      document.getElementById('playerArtist').innerText = song.artist;
-      document.getElementById('playerCover').src = song.cover;
-      playBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+  resultsList.innerHTML = songs.map((song, index) => `
+    <div onclick="tocar(${index})"
+      class="flex items-center gap-3 p-3 bg-slate-900/70 hover:bg-slate-800/90 active:bg-slate-800 rounded-xl cursor-pointer border border-slate-800/80 transition group">
+      <img src="${escapeHtml(song.cover)}" alt="" referrerpolicy="no-referrer" class="w-12 h-12 rounded-lg object-cover bg-slate-800 border border-slate-700/60 shrink-0" onerror="this.src='${FALLBACK_COVER}'">
+      <div class="flex-1 truncate">
+        <p class="font-medium text-sm text-slate-100 group-hover:text-amber-400 transition truncate">${escapeHtml(song.title)}</p>
+        <p class="text-xs text-slate-400 truncate mt-0.5">${escapeHtml(song.artist)}${song.duration ? ' · ' + formatTime(song.duration) : ''}</p>
+      </div>
+      <button class="text-amber-500 group-hover:scale-110 p-2 text-base shrink-0 transition" aria-label="Tocar ${escapeHtml(song.title)}">
+        <i class="fa-solid fa-play"></i>
+      </button>
+    </div>`).join('');
+}
 
-      const streamData = await fetchPiped(`/streams/${song.id}`);
-      const audioStreams = streamData?.audioStreams || [];
+/* ---------- Player ---------- */
+let playToken = 0;
 
-      if (!audioStreams.length) {
-        alert('Não foi possível carregar o áudio desta faixa. Tente outra!');
-        playBtn.innerHTML = '<i class="fa-solid fa-play ml-0.5"></i>';
-        return;
-      }
+async function tocar(index) {
+  const song = window.currentSongs?.[index];
+  if (!song) return;
+  const my = ++playToken;
 
-      const bestAudio = audioStreams.sort((a, b) => (b.bitrate || 0) - (a.bitrate || 0))[0];
+  document.getElementById('playerTitle').innerText = song.title;
+  document.getElementById('playerArtist').innerText = song.artist;
+  document.getElementById('playerCover').src = song.cover;
+  durationTimeEl.innerText = formatTime(song.duration);
+  currentTimeEl.innerText = '0:00';
+  progressBar.value = 0;
+  playBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+  audio.pause();
 
-      audio.src = bestAudio.url;
-      audio.play().then(() => {
-        playBtn.innerHTML = '<i class="fa-solid fa-pause ml-0.5"></i>';
-      }).catch(err => {
-        playBtn.innerHTML = '<i class="fa-solid fa-play ml-0.5"></i>';
-      });
-    }
+  let data;
+  try {
+    data = await fetchPiped(`/streams/${encodeURIComponent(song.id)}`, STREAM_TIMEOUT);
+  } catch (e) {
+    if (my !== playToken) return;
+    setPlayIcon(false);
+    showToast('Não consegui conectar aos servidores agora. Tente de novo em instantes.');
+    return;
+  }
+  if (my !== playToken) return;
 
-    function togglePlay() {
-      if (!audio.src) return;
-      if (audio.paused) {
-        audio.play();
-        playBtn.innerHTML = '<i class="fa-solid fa-pause ml-0.5"></i>';
-      } else {
-        audio.pause();
-        playBtn.innerHTML = '<i class="fa-solid fa-play ml-0.5"></i>';
-      }
-    }
+  const url = pickAudio(data.audioStreams);
+  if (!url) {
+    setPlayIcon(false);
+    showToast('Esta faixa não tem áudio disponível. Tente outra.');
+    return;
+  }
+  if (data.duration > 0) durationTimeEl.innerText = formatTime(data.duration);
 
-    audio.ontimeupdate = () => {
-      if (!audio.duration || isNaN(audio.duration)) return;
-      progressBar.value = (audio.currentTime / audio.duration) * 100;
-      currentTimeEl.innerText = formatTime(audio.currentTime);
-      durationTimeEl.innerText = formatTime(audio.duration);
-    };
+  audio.src = url;
+  audio.play().catch(() => {
+    setPlayIcon(false);
+    showToast('Toque em play para começar.');
+  });
+}
 
-    progressBar.oninput = () => {
-      if (!audio.duration || isNaN(audio.duration)) return;
-      audio.currentTime = (progressBar.value / 100) * audio.duration;
-    };
+function togglePlay() {
+  if (!audio.src) return;
+  if (audio.paused) {
+    audio.play().catch(() => setPlayIcon(false));
+  } else {
+    audio.pause();
+  }
+}
 
-    function formatTime(seconds) {
-      if (isNaN(seconds) || seconds < 0) return '0:00';
-      const min = Math.floor(seconds / 60);
-      const sec = Math.floor(seconds % 60);
-      return `${min}:${sec < 10 ? '0' : ''}${sec}`;
-    }
-  </script>
+audio.addEventListener('waiting', () => { playBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>'; });
+audio.addEventListener('playing', () => setPlayIcon(true));
+audio.addEventListener('pause', () => setPlayIcon(false));
+audio.addEventListener('error', () => {
+  setPlayIcon(false);
+  if (audio.src) showToast('O áudio desta faixa não carregou. Tente outra.');
+});
+audio.addEventListener('ended', () => {
+  setPlayIcon(false);
+  progressBar.value = 0;
+  currentTimeEl.innerText = '0:00';
+});
+
+audio.ontimeupdate = () => {
+  if (!audio.duration || isNaN(audio.duration)) return;
+  progressBar.value = (audio.currentTime / audio.duration) * 100;
+  currentTimeEl.innerText = formatTime(audio.currentTime);
+  durationTimeEl.innerText = formatTime(audio.duration);
+};
+
+progressBar.oninput = () => {
+  if (!audio.duration || isNaN(audio.duration)) return;
+  audio.currentTime = (progressBar.value / 100) * audio.duration;
+};
+</script>
 </body>
 </html>
